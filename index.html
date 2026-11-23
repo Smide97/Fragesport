@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frågesport</title>
+<style>
+:root{--bg:#f4f1ea;--card:#fff;--ink:#1d1b18;--muted:#6b665d;--accent:#2f5d50;--ok:#2e7d4f;--bad:#b3392f;--line:#e2ddd2}
+@media (prefers-color-scheme:dark){:root{--bg:#161512;--card:#211f1b;--ink:#efeae0;--muted:#a39d91;--accent:#7fc1a8;--ok:#5fbf86;--bad:#e2776c;--line:#34312b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+main{width:100%;max-width:620px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px}
+h1{margin:0 0 6px;font-size:1.8rem}
+p.sub{color:var(--muted);margin:0 0 22px}
+.cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:12px 14px;text-align:left;transition:border-color .15s,background .15s}
+button:hover:not(:disabled){border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--card);border-color:var(--accent);text-align:center;font-weight:600}
+.top{display:flex;justify-content:space-between;color:var(--muted);font-size:.9rem;margin-bottom:8px}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:20px}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.q{font-size:1.25rem;font-weight:600;margin:0 0 18px}
+.opts{display:grid;gap:10px}
+.opts button.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,var(--card))}
+.opts button.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,var(--card))}
+.timer{font-variant-numeric:tabular-nums}
+.foot{margin-top:20px;display:flex;justify-content:flex-end}
+.big{font-size:3rem;font-weight:700;margin:10px 0}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<main>
+  <section id="start">
+    <h1>Frågesport</h1>
+    <p class="sub">Välj en kategori. 10 frågor, 20 sekunder per fråga.</p>
+    <div class="cats" id="cats"></div>
+    <p class="sub" id="best" style="margin-top:18px"></p>
+  </section>
+  <section id="game" class="hidden">
+    <div class="top"><span id="count"></span><span>Poäng: <b id="score">0</b> · <span class="timer" id="timer">20</span> s</span></div>
+    <div class="bar"><i id="prog"></i></div>
+    <p class="q" id="question"></p>
+    <div class="opts" id="opts"></div>
+    <div class="foot"><button class="primary hidden" id="next">Nästa →</button></div>
+  </section>
+  <section id="end" class="hidden" style="text-align:center">
+    <h1>Klart!</h1>
+    <div class="big" id="final"></div>
+    <p class="sub" id="msg"></p>
+    <button class="primary" id="again">Spela igen</button>
+  </section>
+</main>
+<script>
+const Q={
+"Allmänbildning":[
+["Vad är Sveriges huvudstad?",["Göteborg","Stockholm","Malmö","Uppsala"],1],
+["Hur många dagar har ett skottår?",["364","365","366","367"],2],
+["Vilket är världens största hav?",["Atlanten","Indiska oceanen","Stilla havet","Norra ishavet"],2],
+["Vem målade Mona Lisa?",["Michelangelo","Leonardo da Vinci","Rafael","Rembrandt"],1],
+["Vilket grundämne har den kemiska beteckningen O?",["Guld","Osmium","Syre","Väte"],2],
+["Hur många kontinenter finns det?",["5","6","7","8"],2],
+["Vilket år föll Berlinmuren?",["1985","1989","1991","1993"],1],
+["Vilket språk har flest modersmålstalare?",["Engelska","Spanska","Hindi","Mandarin"],3],
+["Vad heter Sveriges längsta flod?",["Klarälven","Torne älv","Dalälven","Ångermanälven"],0],
+["Hur många ben har en spindel?",["6","8","10","12"],1],
+["Vilken planet kallas den röda planeten?",["Venus","Jupiter","Mars","Saturnus"],2],
+["Vem skrev Pippi Långstrump?",["Selma Lagerlöf","Astrid Lindgren","Elsa Beskow","Tove Jansson"],1]],
+"Geografi":[
+["Vilket land har flest invånare?",["Kina","Indien","USA","Indonesien"],1],
+["Vad är Australiens huvudstad?",["Sydney","Melbourne","Canberra","Perth"],2],
+["Vilket är världens högsta berg?",["K2","Kebnekaise","Mount Everest","Mont Blanc"],2],
+["Genom vilken stad flyter Seine?",["Rom","Paris","Wien","London"],1],
+["Vilket land är till ytan störst?",["Kanada","Kina","USA","Ryssland"],3],
+["Vilken öken är världens största varma öken?",["Gobi","Kalahari","Sahara","Atacama"],2],
+["Vad är Norges huvudstad?",["Bergen","Oslo","Trondheim","Stavanger"],1],
+["Vilken är Sveriges största ö?",["Öland","Orust","Gotland","Hisingen"],2],
+["I vilket land ligger Machu Picchu?",["Mexiko","Chile","Peru","Bolivia"],2],
+["Vilken flod är längst i Afrika?",["Kongo","Niger","Nilen","Zambezi"],2],
+["Vilket hav ligger mellan Sverige och Finland?",["Bottenviken","Skagerrak","Kattegatt","Nordsjön"],0]],
+"Vetenskap":[
+["Vad är vattnets kokpunkt vid havsnivå?",["90 °C","100 °C","110 °C","120 °C"],1],
+["Vilken gas andas växter in vid fotosyntes?",["Syre","Kväve","Koldioxid","Helium"],2],
+["Hur många ben har en vuxen människa ungefär?",["156","206","256","306"],1],
+["Vad mäts i ampere?",["Spänning","Resistans","Ström","Effekt"],2],
+["Vilken är solsystemets största planet?",["Saturnus","Jupiter","Neptunus","Jorden"],1],
+["Vem formulerade relativitetsteorin?",["Newton","Bohr","Einstein","Curie"],2],
+["Vad står DNA för?",["Deoxiribonukleinsyra","Dinatriumacetat","Dubbel nukleär atom","Diribonukleinsyra"],0],
+["Ljusets hastighet är ungefär…",["300 km/s","3 000 km/s","300 000 km/s","3 000 000 km/s"],2],
+["Vilket organ producerar insulin?",["Levern","Bukspottkörteln","Njurarna","Mjälten"],1],
+["Vilket är det hårdaste naturliga materialet?",["Granit","Diamant","Kvarts","Järn"],1],
+["Hur många protoner har en kolatom?",["4","6","8","12"],1]],
+"Sport":[
+["Hur många spelare har ett fotbollslag på planen?",["9","10","11","12"],2],
+["Var hölls OS 2016?",["London","Tokyo","Rio de Janeiro","Peking"],2],
+["Vilken sport förknippas med Björn Borg?",["Golf","Tennis","Ishockey","Skidor"],1],
+["Hur lång är ett maratonlopp?",["21,1 km","38,6 km","42,195 km","50 km"],2],
+["Hur många perioder spelas i en ishockeymatch?",["2","3","4","5"],1],
+["Vilket land har vunnit flest fotbolls-VM för herrar?",["Tyskland","Italien","Argentina","Brasilien"],3],
+["Vad heter världens mest kända cykeltävling?",["Giro d'Italia","Tour de France","Vuelta","Vätternrundan"],1],
+["Hur många poäng ger en straffkast i basket?",["1","2","3","4"],0],
+["Vilket lopp går mellan Sälen och Mora?",["Vasaloppet","Lidingöloppet","Vansbrosimningen","Engelbrektsloppet"],0],
+["I vilken sport använder man en shuttlecock?",["Squash","Badminton","Padel","Bordtennis"],1],
+["Vilken stad arrangerade vinter-OS 1994?",["Calgary","Albertville","Lillehammer","Nagano"],2]]
+};
+const N=10,T=20,$=id=>document.getElementById(id);
+let cat,qs,i,score,left,tick;
+const show=s=>["start","game","end"].forEach(x=>$(x).classList.toggle("hidden",x!==s));
+const shuffle=a=>{a=[...a];for(let k=a.length-1;k>0;k--){const j=Math.random()*(k+1)|0;[a[k],a[j]]=[a[j],a[k]]}return a};
+const getBest=()=>{try{return JSON.parse(localStorage.getItem("fs-best")||"{}")}catch{return{}}};
+function renderStart(){
+  $("cats").innerHTML="";
+  [...Object.keys(Q),"Blandat"].forEach(c=>{const b=document.createElement("button");b.textContent=c;b.onclick=()=>start(c);$("cats").append(b)});
+  const best=getBest(),e=Object.entries(best);
+  $("best").textContent=e.length?"Bästa resultat: "+e.map(([k,v])=>`${k} ${v}/${N}`).join(" · "):"";
+  show("start");
+}
+function start(c){
+  cat=c;const pool=c==="Blandat"?Object.values(Q).flat():Q[c];
+  qs=shuffle(pool).slice(0,N);i=0;score=0;$("score").textContent=0;show("game");ask();
+}
+function ask(){
+  const [q,opts,ans]=qs[i];
+  $("count").textContent=`Fråga ${i+1} av ${qs.length}`;
+  $("prog").style.width=(i/qs.length*100)+"%";
+  $("question").textContent=q;$("opts").innerHTML="";$("next").classList.add("hidden");
+  shuffle(opts.map((t,k)=>({t,ok:k===ans}))).forEach(o=>{
+    const b=document.createElement("button");b.textContent=o.t;b.dataset.ok=o.ok;b.onclick=()=>answer(b);$("opts").append(b)});
+  left=T;$("timer").textContent=left;clearInterval(tick);
+  tick=setInterval(()=>{left--;$("timer").textContent=left;if(left<=0)answer(null)},1000);
+}
+function answer(b){
+  clearInterval(tick);
+  [...$("opts").children].forEach(x=>{x.disabled=true;if(x.dataset.ok==="true")x.classList.add("ok")});
+  if(b){if(b.dataset.ok==="true")$("score").textContent=++score;else b.classList.add("bad")}
+  $("next").textContent=i+1<qs.length?"Nästa →":"Se resultat";$("next").classList.remove("hidden");$("next").focus();
+}
+$("next").onclick=()=>{i++;i<qs.length?ask():end()};
+function end(){
+  $("prog").style.width="100%";$("final").textContent=`${score} / ${qs.length}`;
+  const p=score/qs.length;
+  $("msg").textContent=p===1?"Perfekt! Fullpott!":p>=.7?"Riktigt bra jobbat!":p>=.4?"Helt okej – försök igen!":"Det kan bara bli bättre!";
+  const best=getBest();if(!(best[cat]>=score)){best[cat]=score;try{localStorage.setItem("fs-best",JSON.stringify(best))}catch{}}
+  show("end");
+}
+$("again").onclick=renderStart;
+renderStart();
+</script>
+</body>
+</html>
