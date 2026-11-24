@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Frågesport</title>
 <style>
-:root{--bg:#f4f1ea;--card:#fff;--ink:#1d1b18;--muted:#6b665d;--accent:#2f5d50;--accent-ink:#fff;--tile:#2f5d50;--tile-ink:#f6e7b8;--used:#e2ddd2;--ok:#2e7d4f;--bad:#b3392f;--line:#e2ddd2}
-@media (prefers-color-scheme:dark){:root{--bg:#161512;--card:#211f1b;--ink:#efeae0;--muted:#a39d91;--accent:#7fc1a8;--accent-ink:#10201a;--tile:#244a40;--tile-ink:#f3dc96;--used:#2b2924;--ok:#5fbf86;--bad:#e2776c;--line:#34312b}}
+:root{--bg:#dcebf7;--card:#fff;--ink:#1d1b18;--muted:#6b665d;--accent:#2f5a86;--accent-ink:#fff;--tile:#2f5d50;--tile-ink:#f6e7b8;--used:#e2ddd2;--ok:#2e7d4f;--bad:#b3392f;--line:#e2ddd2}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1a26;--card:#211f1b;--ink:#efeae0;--muted:#a39d91;--accent:#8fb8e3;--accent-ink:#10201a;--tile:#244a40;--tile-ink:#f3dc96;--used:#2b2924;--ok:#5fbf86;--bad:#e2776c;--line:#34312b}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px 16px 48px}
 .wrap{max-width:1000px;margin:0 auto}
@@ -25,7 +25,7 @@ input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:
 #boardView,.question{--stage:#14111f;--tileA:#5b2a86;--tileB:#3a1a5c;--glow:#ffd36e;--catbg:#231a36}
 #boardView{background:var(--stage);border-radius:18px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
 .board{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:8px}
-.cat{background:var(--catbg);color:#fff;border:2px solid #3b2d57;border-radius:8px;padding:10px 6px;text-align:center;font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:clamp(.62rem,1.5vw,.95rem);line-height:1.2;display:flex;align-items:center;justify-content:center;min-height:64px;hyphens:auto;overflow-wrap:anywhere}
+.cat{background:var(--cc,var(--catbg));color:#fff;border:2px solid rgba(255,255,255,.14);text-shadow:0 1px 2px rgba(0,0,0,.35);border-radius:8px;padding:10px 6px;text-align:center;font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:clamp(.62rem,1.5vw,.95rem);line-height:1.2;display:flex;align-items:center;justify-content:center;min-height:64px;hyphens:auto;overflow-wrap:anywhere}
 .tile{background:linear-gradient(160deg,var(--tileA),var(--tileB));color:var(--glow);border:none;border-radius:8px;aspect-ratio:16/10;font-size:clamp(1.1rem,3.6vw,2.4rem);font-weight:900;padding:0;font-variant-numeric:tabular-nums;text-shadow:0 0 12px rgba(255,211,110,.55),0 2px 0 rgba(0,0,0,.5);box-shadow:inset 0 2px 0 rgba(255,255,255,.18),inset 0 -4px 0 rgba(0,0,0,.35);transition:transform .12s,filter .12s}
 .tile:hover{transform:translateY(-2px);filter:brightness(1.15);border:none}
 .tile.used{background:#1d1829;color:#4a4060;text-shadow:none;box-shadow:inset 0 2px 6px rgba(0,0,0,.5);font-weight:700}
@@ -33,7 +33,7 @@ input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:
 
 /* Fråga – fyller brädet */
 .question{background:radial-gradient(ellipse at center,var(--tileA),var(--tileB) 70%,var(--stage));color:#fff;border-radius:18px;padding:32px 24px;text-align:center;min-height:min(70vh,560px);display:flex;flex-direction:column;justify-content:center;gap:22px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-.question .meta{color:var(--glow);font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.question .meta{color:#fff;background:var(--cc,transparent);align-self:center;padding:4px 14px;border-radius:999px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
 .question .q{font-size:clamp(1.4rem,4vw,2.6rem);font-weight:800;text-transform:uppercase;line-height:1.25;margin:0;text-shadow:0 2px 0 rgba(0,0,0,.4)}
 .question .a{font-size:clamp(1.3rem,3.2vw,2rem);color:var(--glow);font-weight:800;margin:0;text-shadow:0 0 14px rgba(255,211,110,.5)}
 .question .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
@@ -136,6 +136,7 @@ const CATS=[
  ["Vem regisserade filmen Jurassic Park?","Steven Spielberg"],
  ["Vilken kompositör skrev Fyra årstiderna?","Antonio Vivaldi"]]]
 ];
+const CAT_COLORS=["#3f7f8c","#5f8a55","#a0703a","#9a5468","#4f6fa3","#7a6299"];
 const VALUES=[100,200,300,400,500];
 const KEY="fs-board-v1",$=id=>document.getElementById(id);
 
@@ -147,7 +148,7 @@ const isUsed=(c,r)=>state.used.includes(c+"-"+r);
 
 function renderBoard(){
   const b=$("board");b.style.setProperty("--cols",CATS.length);b.innerHTML="";
-  CATS.forEach(([name])=>{const d=document.createElement("div");d.className="cat";d.textContent=name;b.append(d)});
+  CATS.forEach(([name],c)=>{const d=document.createElement("div");d.className="cat";d.textContent=name;d.style.setProperty("--cc",CAT_COLORS[c%CAT_COLORS.length]);b.append(d)});
   VALUES.forEach((v,r)=>CATS.forEach(([name],c)=>{
     const t=document.createElement("button");
     t.className="tile"+(isUsed(c,r)?" used":"");t.textContent=v;
@@ -159,7 +160,7 @@ function renderBoard(){
 function openQ(c,r){
   active={c,r};lastValue=VALUES[r];
   const [name,qs]=CATS[c],[q,a]=qs[r];
-  $("qMeta").textContent=`${name} · ${VALUES[r]} poäng`;
+  $("qMeta").textContent=`${name} · ${VALUES[r]} poäng`;$("qMeta").style.setProperty("--cc",CAT_COLORS[c%CAT_COLORS.length]);
   $("qText").textContent=q;$("qAnswer").textContent=a;
   $("qAnswer").classList.add("hidden");$("showAnswer").classList.remove("hidden");
   $("boardView").classList.add("hidden");$("questionView").classList.remove("hidden");
