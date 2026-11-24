@@ -263,17 +263,19 @@ function renderTeams(){
   $("hint").textContent=v
     ?`Plus och minus ger ±${v} poäng`+(active?" för den aktuella frågan.":" (senast valda fråga).")
     :"Lägg till deltagare och välj en fråga – sedan ger plus/minus frågans poäng.";
-  const box=$("teams");box.innerHTML="";
+  const box=$("teams");
+  const before=new Map([...box.querySelectorAll(".team")].map(el=>[el.dataset.id,el.getBoundingClientRect().left]));
+  box.innerHTML="";
   if(!state.teams.length){box.innerHTML='<div class="empty">Inga deltagare än – lägg till det första laget! 🎉</div>';return}
   const max=Math.max(...state.teams.map(t=>t.score));
   const scale=Math.max(max,...state.teams.map(t=>Math.abs(t.score)),1);
   const sorted=[...state.teams].map(t=>t.score).sort((a,b)=>b-a);
-  state.teams.forEach(t=>{
+  [...state.teams].sort((a,b)=>b.score-a.score).forEach(t=>{
     if(!EMOJIS.includes(t.emoji))t.emoji=EMOJIS[(t.id-1)%EMOJIS.length];
     const color=TEAM_COLORS[(t.id-1)%TEAM_COLORS.length];
     const rank=sorted.indexOf(t.score);
     const row=document.createElement("div");
-    row.className="team"+(t.score===max&&max>0?" lead":"");row.style.setProperty("--tc",color);
+    row.className="team"+(t.score===max&&max>0?" lead":"");row.dataset.id=t.id;row.style.setProperty("--tc",color);
 
     const av=document.createElement("button");av.className="avatar";av.textContent=t.emoji;
     av.title="Byt figur";av.setAttribute("aria-label","Byt figur för "+t.name);
@@ -304,6 +306,12 @@ function renderTeams(){
     ctrl.append(mk("minus","−",-1,"Dra av"),mk("plus","+",1,"Lägg till"),del);
     row.append(av,who,pts,ctrl);
     box.append(row);
+  });
+  // Glid mjukt till nya platser när ordningen ändras
+  box.querySelectorAll(".team").forEach(el=>{
+    const old=before.get(el.dataset.id);if(old==null)return;
+    const dx=old-el.getBoundingClientRect().left;if(!dx)return;
+    el.animate([{transform:`translateX(${dx}px)`},{transform:"none"}],{duration:450,easing:"cubic-bezier(.2,.8,.2,1)"});
   });
   save();
 }
