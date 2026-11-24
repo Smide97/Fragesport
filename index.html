@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Frågesport</title>
 <style>
-:root{--bg:#dcebf7;--card:#fff;--ink:#1d1b18;--muted:#6b665d;--accent:#2f5a86;--accent-ink:#fff;--tile:#2f5d50;--tile-ink:#f6e7b8;--used:#e2ddd2;--ok:#2e7d4f;--bad:#b3392f;--line:#e2ddd2}
-@media (prefers-color-scheme:dark){:root{--bg:#0f1a26;--card:#211f1b;--ink:#efeae0;--muted:#a39d91;--accent:#8fb8e3;--accent-ink:#10201a;--tile:#244a40;--tile-ink:#f3dc96;--used:#2b2924;--ok:#5fbf86;--bad:#e2776c;--line:#34312b}}
+:root{--bg:#dcebf7;--panel:#f3effa;--panel-line:#ddd3ef;--card:#fff;--ink:#1d1b18;--muted:#6b665d;--accent:#2f5a86;--accent-ink:#fff;--tile:#2f5d50;--tile-ink:#f6e7b8;--used:#e2ddd2;--ok:#2e7d4f;--bad:#b3392f;--line:#e2ddd2}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1a26;--panel:#1f1a2b;--panel-line:#352c47;--card:#211f1b;--ink:#efeae0;--muted:#a39d91;--accent:#8fb8e3;--accent-ink:#10201a;--tile:#244a40;--tile-ink:#f3dc96;--used:#2b2924;--ok:#5fbf86;--bad:#e2776c;--line:#34312b}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px 16px 48px}
 .wrap{max-width:1000px;margin:0 auto}
@@ -41,13 +41,13 @@ input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:
 .question button.primary{background:var(--glow);color:#241a05;border-color:var(--glow)}
 
 /* Poängtavla */
-.scores{margin-top:28px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+.scores{margin-top:28px;background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;padding:20px}
 .scores .head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
 .hint{color:var(--muted);font-size:.9rem;margin:0 0 14px}
 .add{display:flex;gap:8px;margin-bottom:14px}
 .add input{flex:1}
 .teams{display:grid;gap:8px}
-.team{display:grid;grid-template-columns:28px 1fr auto auto auto auto;gap:8px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:12px}
+.team{background:var(--card);display:grid;grid-template-columns:28px 1fr auto auto auto auto;gap:8px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:12px}
 .team.lead{border-color:#e0b64a;box-shadow:inset 4px 0 0 #e0b64a}
 .team .rank{color:var(--muted);text-align:center;font-weight:600}
 .team input{border-color:transparent;background:transparent;font-weight:600;width:100%}
