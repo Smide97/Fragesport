@@ -74,11 +74,54 @@ h2{margin:0;font-size:1.1rem}
 .empty{color:var(--muted);padding:8px 4px}
 .hidden{display:none!important}
 
+/* Flikar */
+.brand{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.tabs{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px}
+.tab{border:none;background:none;border-radius:9px;padding:6px 14px;font-weight:600;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tab:hover:not([aria-selected="true"]){color:var(--ink)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Highscore */
+#hsTab{background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;padding:18px}
+.hs-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:18px;align-items:start}
+.hs-box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.hs-box h3{margin:0 0 10px;font-size:1.05rem}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+.stat .k{color:var(--muted);font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.stat .v{font-size:1.5rem;font-weight:900;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stat .d{color:var(--muted);font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toplist{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.toplist li{display:grid;grid-template-columns:2.2em auto 1fr auto;gap:8px;align-items:center;padding:6px 8px;border-radius:10px}
+.toplist li:nth-child(-n+3){background:color-mix(in srgb,#e8c45a 14%,transparent)}
+.toplist .r{font-weight:800;text-align:center;color:var(--muted)}
+.toplist .e{font-size:1.3rem;line-height:1}
+.toplist .n{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toplist .n small{display:block;font-weight:400;color:var(--muted);font-size:.8rem}
+.toplist .p{font-weight:900;font-variant-numeric:tabular-nums;font-size:1.1rem}
+.rounds{display:grid;gap:10px}
+.round{border:1px solid var(--line);border-radius:12px;padding:10px 12px;position:relative}
+.round.fresh{box-shadow:0 0 0 2px #e8c45a}
+.round .when{color:var(--muted);font-size:.85rem;margin-right:28px}
+.round .win{font-weight:800;margin:2px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-left:4px solid var(--tc);border-radius:999px;padding:2px 10px 2px 6px;font-size:.9rem}
+.chip b{font-variant-numeric:tabular-nums}
+.round .del{position:absolute;top:6px;right:6px}
+.hs-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px;color:var(--muted);font-size:.85rem}
+.hs-empty{text-align:center;color:var(--muted);padding:40px 12px}
+.hs-empty .big{font-size:2.5rem}
+@media (max-width:760px){.hs-grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr}}
+
 /* Stor skärm: allt får plats utan att scrolla */
 @media (min-width:700px) and (min-height:540px){
   body{height:100vh;height:100dvh;padding:12px 16px}
   .wrap{height:100%;display:flex;flex-direction:column}
   header{flex:none}
+  #gameTab{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+  #gameTab.hidden{display:none}
+  #hsTab{flex:1 1 auto;min-height:0;overflow:auto}
   #boardView,#questionView{flex:1 1 auto;min-height:0}
   #boardView{display:flex}
   .board{flex:1;grid-template-rows:auto repeat(5,minmax(0,1fr))}
@@ -95,12 +138,20 @@ h2{margin:0;font-size:1.1rem}
 <body>
 <div class="wrap">
   <header>
-    <div>
+    <div class="brand">
       <h1>Frågesport</h1>
-      <p class="sub">Välj en ruta. Högre poäng betyder svårare fråga.</p>
+      <div class="tabs" role="tablist" aria-label="Vy">
+        <button class="tab" role="tab" id="tabGame" aria-controls="gameTab" aria-selected="true">Spelbräde</button>
+        <button class="tab" role="tab" id="tabHs" aria-controls="hsTab" aria-selected="false">🏆 Highscore</button>
+      </div>
     </div>
-    <button id="reset">Nytt spel</button>
+    <div class="actions" id="gameActions">
+      <button class="primary" id="finish">Avsluta &amp; spara runda</button>
+      <button id="reset">Nytt spel</button>
+    </div>
   </header>
+
+  <div id="gameTab" role="tabpanel" aria-labelledby="tabGame">
 
   <section id="boardView"><div class="board" id="board"></div></section>
 
@@ -125,6 +176,9 @@ h2{margin:0;font-size:1.1rem}
     </div>
     <div class="teams" id="teams"></div>
   </section>
+  </div>
+
+  <section id="hsTab" class="hidden" role="tabpanel" aria-labelledby="tabHs"></section>
 </div>
 
 <script>
@@ -257,11 +311,82 @@ $("addForm").onsubmit=e=>{
   e.preventDefault();const n=$("teamName").value.trim();if(!n)return;
   state.teams.push({id:state.nextId++,name:n,score:0});$("teamName").value="";save();renderTeams();$("teamName").focus();
 };
-$("reset").onclick=()=>{
-  if(!confirm("Starta nytt spel? Brädet återställs och alla poäng nollas (deltagarna behålls)."))return;
+function resetRound(){
   state.used=[];state.teams.forEach(t=>t.score=0);active=null;lastValue=null;save();
   $("questionView").classList.add("hidden");$("boardView").classList.remove("hidden");renderBoard();renderTeams();
+}
+$("reset").onclick=()=>{
+  if(!confirm("Starta nytt spel utan att spara? Brädet återställs och alla poäng nollas (deltagarna behålls)."))return;
+  resetRound();
 };
+
+/* ---- Highscore ---- */
+const HKEY="fs-history-v1";
+let history=(()=>{try{return JSON.parse(localStorage.getItem(HKEY))||[]}catch{return[]}})();
+let freshId=null;
+const saveHistory=()=>{try{localStorage.setItem(HKEY,JSON.stringify(history))}catch{}};
+const teamColor=t=>TEAM_COLORS[(t.id-1)%TEAM_COLORS.length];
+const fmtDate=iso=>new Date(iso).toLocaleString("sv-SE",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+const esc=x=>String(x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+$("finish").onclick=()=>{
+  if(!state.teams.length){alert("Lägg till minst ett lag innan du sparar en runda.");return}
+  const played=state.used.length,total=CATS.length*VALUES.length;
+  if(!confirm(`Avsluta rundan och spara resultatet i highscore?\n(${played} av ${total} frågor spelade.) Brädet och poängen nollställs sedan.`))return;
+  const round={id:Date.now(),date:new Date().toISOString(),played,total,
+    teams:[...state.teams].sort((a,b)=>b.score-a.score).map(t=>({name:t.name,emoji:t.emoji,color:teamColor(t),score:t.score}))};
+  history.unshift(round);saveHistory();freshId=round.id;
+  resetRound();showTab("hs");
+};
+
+function renderHs(){
+  const box=$("hsTab");
+  if(!history.length){
+    box.innerHTML='<div class="hs-empty"><div class="big">🏆</div><h2>Inga sparade rundor än</h2><p>Spela en runda och klicka på <b>Avsluta &amp; spara runda</b> – då hamnar resultatet här.</p></div>';
+    return;
+  }
+  const all=history.flatMap(r=>r.teams.map(t=>({...t,date:r.date})));
+  const top=all.filter(t=>t.score>0).sort((a,b)=>b.score-a.score).slice(0,10);
+  const wins={};history.forEach(r=>{const m=r.teams[0].score;if(m<=0)return;r.teams.filter(t=>t.score===m).forEach(t=>{wins[t.name]=(wins[t.name]||0)+1})});
+  const best=Object.entries(wins).sort((a,b)=>b[1]-a[1])[0];
+  const rec=top[0];
+  const medal=i=>["🥇","🥈","🥉"][i]||(i+1)+".";
+  box.innerHTML=`
+    <div class="stats">
+      <div class="stat"><div class="k">Rekord</div><div class="v">${rec?rec.score:"–"}</div><div class="d">${rec?esc(rec.emoji||"")+" "+esc(rec.name):"Inga poäng än"}</div></div>
+      <div class="stat"><div class="k">Flest vinster</div><div class="v">${best?esc(best[0]):"–"}</div><div class="d">${best?best[1]+(best[1]===1?" vinst":" vinster"):"Ingen vinnare än"}</div></div>
+      <div class="stat"><div class="k">Spelade rundor</div><div class="v">${history.length}</div><div class="d">Senast ${fmtDate(history[0].date)}</div></div>
+    </div>
+    <div class="hs-grid">
+      <div class="hs-box"><h3>Bästa resultat genom tiderna</h3><ol class="toplist">
+        ${top.length?"":"<li>Inga poäng registrerade än.</li>"}${top.map((t,i)=>`<li><span class="r">${medal(i)}</span><span class="e">${esc(t.emoji||"")}</span><span class="n">${esc(t.name)}<small>${fmtDate(t.date)}</small></span><span class="p">${t.score}</span></li>`).join("")}
+      </ol></div>
+      <div class="hs-box"><h3>Tidigare rundor</h3><div class="rounds">
+        ${history.map(r=>{const m=r.teams[0].score,w=r.teams.filter(t=>t.score===m&&m>0);
+          return `<div class="round${r.id===freshId?" fresh":""}">
+            <div class="when">${fmtDate(r.date)} · ${r.played} av ${r.total} frågor</div>
+            <div class="win">${w.length?"🏆 "+w.map(t=>esc((t.emoji||"")+" "+t.name)).join(" & ")+` – ${m} poäng`:"Ingen vinnare"}</div>
+            <div class="chips">${r.teams.map(t=>`<span class="chip" style="--tc:${t.color}">${esc(t.emoji||"")} ${esc(t.name)} <b>${t.score}</b></span>`).join("")}</div>
+            <button class="del" data-id="${r.id}" title="Ta bort rundan" aria-label="Ta bort rundan från ${fmtDate(r.date)}">✕</button>
+          </div>`}).join("")}
+      </div></div>
+    </div>
+    <div class="hs-foot"><span>Highscore sparas i den här webbläsaren.</span><button id="clearHs">Rensa all historik</button></div>`;
+  box.querySelectorAll(".round .del").forEach(b=>b.onclick=()=>{
+    if(!confirm("Ta bort den här rundan från highscore?"))return;
+    history=history.filter(r=>r.id!==+b.dataset.id);saveHistory();renderHs()});
+  $("clearHs").onclick=()=>{if(confirm("Rensa all highscore-historik? Det går inte att ångra.")){history=[];saveHistory();renderHs()}};
+}
+
+function showTab(which){
+  const hs=which==="hs";
+  $("tabGame").setAttribute("aria-selected",!hs);$("tabHs").setAttribute("aria-selected",hs);
+  $("gameTab").classList.toggle("hidden",hs);$("hsTab").classList.toggle("hidden",!hs);
+  $("gameActions").classList.toggle("hidden",hs);
+  if(hs)renderHs();else freshId=null;
+}
+$("tabGame").onclick=()=>showTab("game");
+$("tabHs").onclick=()=>showTab("hs");
 renderBoard();renderTeams();
 </script>
 </body>
