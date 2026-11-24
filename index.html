@@ -46,24 +46,41 @@ input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:
 .hint{color:var(--muted);font-size:.9rem;margin:0 0 14px}
 .add{display:flex;gap:8px;margin-bottom:14px}
 .add input{flex:1}
-.teams{display:grid;gap:8px}
-.team{background:var(--card);display:grid;grid-template-columns:28px 1fr auto auto auto auto;gap:8px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:12px}
-.team.lead{border-color:#e0b64a;box-shadow:inset 4px 0 0 #e0b64a}
-.team .rank{color:var(--muted);text-align:center;font-weight:600}
-.team input{border-color:transparent;background:transparent;font-weight:600;width:100%}
+.teams{display:grid;gap:10px}
+.team{--tc:#7a6299;position:relative;background:var(--card);display:grid;grid-template-columns:auto 1fr auto auto auto auto;gap:10px;align-items:center;padding:10px 10px 10px 14px;border:1px solid var(--line);border-left:6px solid var(--tc);border-radius:14px;transition:box-shadow .2s}
+.team.lead{box-shadow:0 0 0 2px #e8c45a,0 6px 18px rgba(232,196,90,.35)}
+.avatar{width:46px;height:46px;border-radius:50%;background:color-mix(in srgb,var(--tc) 22%,var(--card));border:2px solid var(--tc);font-size:1.5rem;display:grid;place-items:center;padding:0;line-height:1}
+.avatar:hover{transform:rotate(-10deg) scale(1.08)}
+.who{min-width:0;display:grid;gap:4px}
+.who .top{display:flex;align-items:center;gap:6px;min-width:0}
+.medal{font-size:1.25rem;line-height:1;flex:none}
+.rankno{flex:none;font-size:.8rem;font-weight:700;color:var(--muted);background:var(--panel);border-radius:999px;padding:1px 8px}
+.team input{border-color:transparent;background:transparent;font-weight:800;font-size:1.15rem;color:var(--tc);padding:2px 6px;width:100%}
 .team input:hover{border-color:var(--line)}
-.team .pts{font-size:1.4rem;font-weight:800;min-width:4ch;text-align:right;font-variant-numeric:tabular-nums}
+.meter{height:6px;border-radius:3px;background:color-mix(in srgb,var(--tc) 15%,transparent);overflow:hidden;margin-left:6px}
+.meter i{display:block;height:100%;background:var(--tc);border-radius:3px;transition:width .4s ease}
+.team .pts{position:relative;font-size:1.6rem;font-weight:900;min-width:4ch;text-align:right;font-variant-numeric:tabular-nums}
 .team .pts.neg{color:var(--bad)}
+.pts.pop{animation:pop .35s ease}
+@keyframes pop{40%{transform:scale(1.3)}}
+.float{position:absolute;right:0;top:-6px;font-size:1rem;font-weight:800;pointer-events:none;animation:up 1s ease forwards}
+.float.up{color:var(--ok)}.float.down{color:var(--bad)}
+@keyframes up{to{transform:translateY(-28px);opacity:0}}
 .pm{width:44px;height:40px;padding:0;font-size:1.3rem;font-weight:700}
 .pm.plus{color:var(--ok)}.pm.minus{color:var(--bad)}
+.ctrl{display:contents}
 .del{border:none;background:none;color:var(--muted);padding:4px 8px;font-size:1.1rem}
 .empty{color:var(--muted);text-align:center;padding:12px}
 .hidden{display:none!important}
 @media (max-width:560px){
   #boardView{padding:6px;border-radius:12px}.board{gap:4px}.cat{min-height:52px;padding:6px 2px;border-radius:5px;letter-spacing:0}.tile{border-radius:5px}
-  .team{grid-template-columns:1fr auto auto auto auto;}
-  .team .rank{display:none}
-  .pm{width:38px}
+  .team{grid-template-columns:auto 1fr auto auto;gap:8px;padding-left:10px}
+  .avatar{width:38px;height:38px;font-size:1.2rem}
+  .team input{font-size:1rem;padding:2px 4px}.team .pts{font-size:1.4rem}
+  .team .pts{grid-column:3/5;grid-row:1}
+  .who{grid-column:2}
+  .team .ctrl{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px}
+  .pm{width:52px}
 }
 </style>
 </head>
@@ -175,29 +192,58 @@ $("showAnswer").onclick=()=>{$("qAnswer").classList.remove("hidden");$("showAnsw
 $("back").onclick=closeQ;
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&active)closeQ()});
 
+const TEAM_COLORS=["#c0567a","#3f7f8c","#c27c2c","#5f8a55","#4f6fa3","#8a5fb0","#b5523d","#2f8f7a"];
+const EMOJIS=["🦊","🐼","🐸","🦁","🐙","🦄","🐧","🐝","🐯","🐨","🦉","🐳","🦖","🐵","🦩","🐢"];
+const MEDALS=["🥇","🥈","🥉"];
+let flash=null; // {id,delta}
 function renderTeams(){
   const v=active?VALUES[active.r]:lastValue;
   $("hint").textContent=v
     ?`Plus och minus ger ±${v} poäng`+(active?" för den aktuella frågan.":" (senast valda fråga).")
     :"Lägg till deltagare och välj en fråga – sedan ger plus/minus frågans poäng.";
   const box=$("teams");box.innerHTML="";
-  if(!state.teams.length){box.innerHTML='<div class="empty">Inga deltagare än.</div>';return}
+  if(!state.teams.length){box.innerHTML='<div class="empty">Inga deltagare än – lägg till det första laget! 🎉</div>';return}
   const max=Math.max(...state.teams.map(t=>t.score));
-  const order=[...state.teams].sort((a,b)=>b.score-a.score);
+  const scale=Math.max(max,...state.teams.map(t=>Math.abs(t.score)),1);
+  const sorted=[...state.teams].map(t=>t.score).sort((a,b)=>b-a);
   state.teams.forEach(t=>{
+    if(t.emoji==null)t.emoji=EMOJIS[(t.id-1)%EMOJIS.length];
+    const color=TEAM_COLORS[(t.id-1)%TEAM_COLORS.length];
+    const rank=sorted.indexOf(t.score);
     const row=document.createElement("div");
-    row.className="team"+(t.score===max&&max>0?" lead":"");
-    const rank=document.createElement("span");rank.className="rank";rank.textContent=(order.findIndex(o=>o.score===t.score)+1)+".";
+    row.className="team"+(t.score===max&&max>0?" lead":"");row.style.setProperty("--tc",color);
+
+    const av=document.createElement("button");av.className="avatar";av.textContent=t.emoji;
+    av.title="Byt figur";av.setAttribute("aria-label","Byt figur för "+t.name);
+    av.onclick=()=>{t.emoji=EMOJIS[(EMOJIS.indexOf(t.emoji)+1)%EMOJIS.length];save();renderTeams()};
+
+    const who=document.createElement("div");who.className="who";
+    const top=document.createElement("div");top.className="top";
+    const badge=document.createElement("span");
+    if(t.score>0&&rank<3){badge.className="medal";badge.textContent=MEDALS[rank];badge.title=(rank+1)+":a plats"}
+    else{badge.className="rankno";badge.textContent=(rank+1)+"."}
     const name=document.createElement("input");name.value=t.name;name.setAttribute("aria-label","Namn");
     name.onchange=()=>{t.name=name.value.trim()||t.name;name.value=t.name;save()};
+    top.append(badge,name);
+    const meter=document.createElement("div");meter.className="meter";
+    const fill=document.createElement("i");fill.style.width=Math.max(0,t.score)/scale*100+"%";meter.append(fill);
+    who.append(top,meter);
+
     const pts=document.createElement("span");pts.className="pts"+(t.score<0?" neg":"");pts.textContent=t.score;
+    if(flash&&flash.id===t.id){pts.classList.add("pop");const f=document.createElement("span");
+      f.className="float "+(flash.delta>0?"up":"down");f.textContent=(flash.delta>0?"+":"−")+Math.abs(flash.delta);pts.append(f)}
+
     const mk=(cls,txt,sign,label)=>{const b=document.createElement("button");b.className="pm "+cls;b.textContent=txt;b.disabled=!v;
-      b.setAttribute("aria-label",`${label} ${v||""} poäng för ${t.name}`);b.onclick=()=>{t.score+=sign*v;save();renderTeams()};return b};
+      b.setAttribute("aria-label",`${label} ${v||""} poäng för ${t.name}`);
+      b.onclick=()=>{t.score+=sign*v;flash={id:t.id,delta:sign*v};save();renderTeams();flash=null};return b};
     const del=document.createElement("button");del.className="del";del.textContent="✕";del.title="Ta bort";del.setAttribute("aria-label","Ta bort "+t.name);
     del.onclick=()=>{if(confirm(`Ta bort ${t.name}?`)){state.teams=state.teams.filter(x=>x!==t);save();renderTeams()}};
-    row.append(rank,name,pts,mk("minus","−",-1,"Dra av"),mk("plus","+",1,"Lägg till"),del);
+    const ctrl=document.createElement("div");ctrl.className="ctrl";
+    ctrl.append(mk("minus","−",-1,"Dra av"),mk("plus","+",1,"Lägg till"),del);
+    row.append(av,who,pts,ctrl);
     box.append(row);
   });
+  save();
 }
 $("addForm").onsubmit=e=>{
   e.preventDefault();const n=$("teamName").value.trim();if(!n)return;
